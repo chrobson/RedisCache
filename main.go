@@ -4,11 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"html"
 	"log"
 	"net/http"
-	"strings"
 
+	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 )
 
@@ -52,13 +51,14 @@ func OpenConnection() *sql.DB {
 
 func GetUserById(w http.ResponseWriter, r *http.Request) {
 
+	vars := mux.Vars(r)
+	id := vars["id"]
+
 	w.Header().Set("Content-Type", "application/json")
 	renderJSON := func(w http.ResponseWriter, val interface{}, statusCode int) {
 		w.WriteHeader(statusCode)
 		_ = json.NewEncoder(w).Encode(val)
 	}
-
-	id := html.EscapeString(strings.Split(r.URL.Path, "/")[1])
 
 	redis, err := NewRedis()
 	if err != nil {
@@ -91,7 +91,7 @@ func GetUserById(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-
-	http.HandleFunc("/", GetUserById)
-	log.Fatal(http.ListenAndServe("127.0.0.1:8080", nil))
+	r := mux.NewRouter()
+	r.HandleFunc("/{id}", GetUserById)
+	log.Fatal(http.ListenAndServe("127.0.0.1:8080", r))
 }
